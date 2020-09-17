@@ -19,8 +19,10 @@ const publicDirectoryPath = path.join(__dirname, '../public');
 app.use(express.static(publicDirectoryPath));
 
 // print msg to terminal when client connects
-io.on('connection', () => {
-    console.log('New WebSocket connection')
+io.on('connection', (socket) => {
+    console.log('New WebSocket connection');
+    // send message whenever a new client connects
+    socket.emit('welcome', 'Welcome to Charla!')
 })
 
 // start up http server
