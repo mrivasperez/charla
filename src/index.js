@@ -24,9 +24,9 @@ app.use(express.static(publicDirectoryPath));
 io.on('connection', (socket) => {
     console.log('New WebSocket connection');
     // send message whenever a new client connects
-    socket.emit('notify', 'Welcome to Charla!')
+    socket.emit('messageReceived', 'Welcome to Charla!')
     // broacast that new usser has joined to all except user
-    socket.broadcast.emit('notify', 'A new user has joined!')
+    socket.broadcast.emit('messageReceived', 'A new user has joined!')
 
     // listen for incoming messages
     socket.on('messageSent', (message, acknowledgement) => {
@@ -45,8 +45,9 @@ io.on('connection', (socket) => {
             return acknowledgement('Your location could not be accessed.')
         }
         acknowledgement('Location received.')
-        io.emit('messageReceived', `https://google.com/maps?q=${currentPosition}`);
+        io.emit('locationLink', `https://google.com/maps?q=${currentPosition}`);
     })
+    
     socket.on('disconnect', () => {
         io.emit('messageReceived', "A user has left.")
     })

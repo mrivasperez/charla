@@ -13,7 +13,21 @@ const messageTemplate = document.getElementById('message-template').innerHTML;
 socket.on('messageReceived', message => {
     console.log(message);
 
-    const html = Mustache.render(messageTemplate);
+    const html = Mustache.render(messageTemplate, {
+        message
+    });
+    messages.insertAdjacentHTML('beforeend', html);
+})
+
+
+socket.on('locationLink', link => {
+    const locationMessage = 'My current location';
+    const html = Mustache.render(messageTemplate, {
+        link,
+        locationMessage,
+    });
+
+    messages.insertAdjacentHTML('beforeend', html);
 })
 
 // send message
@@ -43,6 +57,10 @@ locationBtn.addEventListener('click', e => {
         let longitude = position.coords.longitude;
         let currentPosition = `${latitude},${longitude}`;
         socket.emit('sendLocation', currentPosition, acknowledgement => {
+            const html = Mustache.render(messageTemplate, {
+                message: acknowledgement
+            })
+            messages.insertAdjacentHTML('beforeend', html);
             console.log(acknowledgement);
             locationBtn.removeAttribute('disabled');
         })
@@ -51,5 +69,3 @@ locationBtn.addEventListener('click', e => {
 })
 
 
-
-socket.on('')
