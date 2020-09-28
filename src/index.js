@@ -4,6 +4,7 @@ const express = require("express");
 const socketio = require("socket.io");
 const Filter = require("bad-words");
 const { generateMessage } = require("./utils/messages");
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users');
 
 const app = express();
 
@@ -25,25 +26,40 @@ console.log(publicDirectoryPath)
 io.on("connection", socket => {
   console.log("New WebSocket connection");
 
-
   socket.on('join', (info) => {
-    socket.join(info.room);
+    const {error, user} = addUser(socket.id, info);
+
+    if(error){
+      socket.emit("acknowledgement", error)
+      return
+    } 
+    console.log(user)
+    socket.join(user.room);
     console.log(info);
     // send message whenever a new client connects
-    socket.emit("message", generateMessage("Welcome!"));
+    socket.emit("message", `Welcome to chatroom: ${user.room}`);
     // broacast that new usser has joined to all except user
-    socket.broadcast.to(info.room).emit("message", generateMessage(`${info.username} has joined!`));
+    socket.broadcast.to(user.room).emit("message", `${user.username} has joined!`);
+    io.to(user.room).emit('roomData', {
+      room: user.room,
+      users: getUsersInRoom(room)
+    })
   });
 
   // listen for incoming messages
   socket.on("messageSent", (message, acknowledgement) => {
     const filter = new Filter();
-
-    if (filter.isProfane(message)) {
-      return socket.emit('message', generateMessage("Profanity is not allowed."));
+    if(message === ''){
+      return;
     }
-    socket.emit('message', generateMessage("Message delivered!"));
-    io.emit("message", generateMessage(message));
+    if (filter.isProfane(message)) {
+      return socket.emit('message', "Profanity is not allowed.");
+    }
+
+    const userInfo = getUser(socket.id);
+    const room = userInfo.room;
+    username = userInfo.username
+    io.to(room).emit('message', {message, username })
   });
 
   // listen for location sending
@@ -51,12 +67,25 @@ io.on("connection", socket => {
     if (!currentPosition) {
       return acknowledgement("Your location could not be accessed.");
     }
-    socket.emit('message', generateMessage("Location received."));
-    io.emit("locationLink", `https://google.com/maps?q=${currentPosition}`);
+
+    const userInfo = getUser(socket.id);
+    const room = userInfo.room;
+    const username = userInfo.username;
+
+    socket.emit('message', "Location received.");
+    io.to(room).emit("locationLink", {link: `https://google.com/maps?q=${currentPosition}`, username});
   });
 
   socket.on("disconnect", () => {
-    io.emit("message", generateMessage("A user has left."));
+    const user = removeUser(socket.id);
+
+    if(user) {
+      io.to(user.room).emit("message", `${user.username} has left.`);
+      io.to(user.room).emit('roomData', {
+        room: user.room,
+        users: getUsersInRoom(room)
+      })
+    }
   });
 });
 
