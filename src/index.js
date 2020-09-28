@@ -28,12 +28,12 @@ io.on("connection", socket => {
 
   socket.on('join', (info) => {
     socket.join(info.room);
-    console.log(username)
+    console.log(info);
     // send message whenever a new client connects
     socket.emit("message", generateMessage("Welcome!"));
     // broacast that new usser has joined to all except user
     socket.broadcast.to(info.room).emit("message", generateMessage(`${info.username} has joined!`));
-  })
+  });
 
   // listen for incoming messages
   socket.on("messageSent", (message, acknowledgement) => {
